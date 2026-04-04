@@ -1,0 +1,206 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+:root {
+  --background: #050508;
+  --foreground: #e2e8f0;
+  --accent-cyan: #6EE7F9;
+  --accent-violet: #8B5CF6;
+  --accent-crimson: #FF4D6D;
+  --accent-gold: #F6C177;
+  --card-bg: #111118;
+  --border: #222230;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: 'Inter', system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* Homepage locks scroll, inner pages don't */
+.home-page {
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+  position: relative;
+}
+
+/* ───── Star field ───── */
+@keyframes twinkle {
+
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.4);
+  }
+}
+
+.star {
+  position: absolute;
+  border-radius: 50%;
+  background: #fff;
+  animation: twinkle var(--twinkle-duration, 3s) ease-in-out infinite;
+  animation-delay: var(--twinkle-delay, 0s);
+}
+
+/* ───── Scrollbar ───── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0a0a0f;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 3px;
+}
+
+/* ───── Side panel slide-in ───── */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.side-panel-enter {
+  animation: slideInRight 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ───── Tooltip fade ───── */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tooltip-enter {
+  animation: fadeIn 0.15s ease-out forwards;
+}
+
+/* ───── Pulse glow (alerts/badges) ───── */
+@keyframes pulseGlow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 4px currentColor;
+  }
+
+  50% {
+    box-shadow: 0 0 14px currentColor, 0 0 28px currentColor;
+  }
+}
+
+.pulse-glow {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+/* ───── Fade-slide-up (page sections) ───── */
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-slide-up {
+  animation: fadeSlideUp 0.5s ease-out forwards;
+}
+
+/* ───── Shimmer skeleton ───── */
+@keyframes shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+
+  100% {
+    background-position: 400px 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #1a1a28 25%, #222234 50%, #1a1a28 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+/* ───── Neon glow card borders ───── */
+.card-glow-cyan {
+  box-shadow: 0 0 0 1px rgba(110, 231, 249, 0.15), 0 4px 24px rgba(110, 231, 249, 0.06);
+}
+
+.card-glow-violet {
+  box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.15), 0 4px 24px rgba(139, 92, 246, 0.06);
+}
+
+.card-glow-crimson {
+  box-shadow: 0 0 0 1px rgba(255, 77, 109, 0.15), 0 4px 24px rgba(255, 77, 109, 0.06);
+}
+
+.card-glow-gold {
+  box-shadow: 0 0 0 1px rgba(246, 193, 119, 0.15), 0 4px 24px rgba(246, 193, 119, 0.06);
+}
+
+/* ───── Map dot pulse ───── */
+@keyframes mapPulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(3.5);
+    opacity: 0;
+  }
+}
+
+.map-dot-ring {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  animation: mapPulse 2s ease-out infinite;
+}

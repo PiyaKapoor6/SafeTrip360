@@ -1,0 +1,11 @@
+[
+  "src\\app\\api\\alerts\\route.ts",
+  "src\\app\\api\\chat\\route.ts",
+  "src\\app\\api\\geocode\\route.ts",
+  "src\\app\\api\\news\\route.ts",
+  "src\\app\\auth\\auth-error\\page.tsx",
+  "src\\app\\login\\page.tsx",
+  "src\\app\\page.tsx",
+  "src\\components\\ChatBot.tsx",
+  "src\\components\\SidePanel.tsx"
+]

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Send, ShieldAlert, CheckCircle2, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
+import DatePicker from "./DatePicker";
 
 interface ReviewFormProps {
     countryCode: string;
@@ -14,6 +15,7 @@ export default function ReviewForm({ countryCode, countryName, onSuccess }: Revi
     const [status, setStatus] = useState<'safe' | 'threat'>('safe');
     const [review, setReview] = useState("");
     const [loading, setLoading] = useState(false);
+    const [travelDate, setTravelDate] = useState("");
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
     const supabase = createClient();
 
@@ -41,7 +43,7 @@ export default function ReviewForm({ countryCode, countryName, onSuccess }: Revi
                         country_name: countryName,
                         status: status,
                         content: review,
-                        created_at: new Date().toISOString(),
+                        created_at: travelDate ? new Date(travelDate).toISOString() : new Date().toISOString(),
                     }
                 ]);
 
@@ -88,6 +90,8 @@ export default function ReviewForm({ countryCode, countryName, onSuccess }: Revi
                     Report Threat
                 </button>
             </div>
+
+            <DatePicker onDateChange={setTravelDate} />
 
             <textarea
                 value={review}

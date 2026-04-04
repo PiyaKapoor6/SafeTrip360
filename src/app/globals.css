@@ -20,6 +20,8 @@
 
 * {
   box-sizing: border-box;
+  user-select: none;
+  caret-color: transparent;
 }
 
 html,

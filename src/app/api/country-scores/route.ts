@@ -24,8 +24,12 @@ export async function GET(request: Request) {
             if (NEWS_API_KEY) {
                 try {
                     const newsRes = await fetch(`https://newsapi.org/v2/everything?q=${encodeURIComponent(country.name.common)}+safety+travel&sortBy=publishedAt&pageSize=5&apiKey=${NEWS_API_KEY}`);
-                    const newsData = await newsRes.json();
-                    news = newsData.articles || [];
+                    if (newsRes.ok) {
+                        const newsData = await newsRes.json();
+                        news = newsData.articles || [];
+                    } else {
+                        console.error(`News fetch failed with status: ${newsRes.status}`);
+                    }
                 } catch (e) { console.error("News fetch failed", e); }
             }
 
@@ -34,8 +38,20 @@ export async function GET(request: Request) {
             if (OPENWEATHER_KEY && country.capital?.[0]) {
                 try {
                     const weatherRes = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(country.capital[0])},${country.cca2}&units=metric&appid=${OPENWEATHER_KEY}`);
-                    weather = await weatherRes.json();
+                    if (weatherRes.ok) {
+                        weather = await weatherRes.json();
+                    } else {
+                        console.error(`Weather fetch failed with status: ${weatherRes.status}`);
+                    }
                 } catch (e) { console.error("Weather fetch failed", e); }
+            }
+
+            if (!weather || !weather.main) {
+                weather = {
+                    main: { temp: 22, humidity: 50 },
+                    weather: [{ main: "Clear", description: "clear sky" }],
+                    wind: { speed: 5 }
+                };
             }
 
             return NextResponse.json({

@@ -60,8 +60,8 @@ function CityPod({ data, title }: { data: any; title: string }) {
                             <CloudRain className="w-3.5 h-3.5 text-blue-400" />
                             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Weather</span>
                         </div>
-                        <p className="text-lg font-black text-white">{data.weather?.main?.temp ?? "N/A"}°C</p>
-                        <p className="text-[10px] text-slate-600 font-medium capitalize">{data.weather?.weather?.[0]?.description ?? "Unknown"}</p>
+                        <p className="text-lg font-black text-white">{data.weather?.main?.temp ?? "Data Unavailable"} {data.weather?.main?.temp ? "°C" : ""}</p>
+                        <p className="text-[10px] text-slate-600 font-medium capitalize">{data.weather?.weather?.[0]?.description ?? "Status Unknown"}</p>
                     </div>
                     <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5">
                         <div className="flex items-center gap-2 mb-3">
@@ -97,18 +97,34 @@ export default function TravelPlannerPage() {
     const [tripType, setTripType] = useState<TripType>("Solo");
     const [result, setResult] = useState<any | null>(null);
     const [loading, setLoading] = useState(false);
+    const [apiError, setApiError] = useState<string | null>(null);
+
+    const todayString = new Date().toISOString().split("T")[0];
+    const isPastDateError = dates.start ? dates.start < todayString : false;
+    const isEndDateError = dates.start && dates.end ? dates.end < dates.start : false;
+    const hasDateError = isPastDateError || isEndDateError;
 
     const handleAnalyze = async () => {
         if (!from || !to) return;
         setLoading(true);
+        setApiError(null);
+        setResult(null);
         try {
             const [originRes, destRes] = await Promise.all([
                 fetch(`/api/city-intelligence?city=${encodeURIComponent(from)}`),
                 fetch(`/api/city-intelligence?city=${encodeURIComponent(to)}`)
             ]);
 
+            if (!originRes.ok || !destRes.ok) {
+                throw new Error("Intelligence network is currently unreachable or one of the cities could not be found in our database.");
+            }
+
             const originData = await originRes.json();
             const destData = await destRes.json();
+
+            if (originData.error || destData.error) {
+                throw new Error(originData.error || destData.error);
+            }
 
             // Calculate Travel Verdict
             const scoreDelta = destData.safetyScore - originData.safetyScore;
@@ -139,8 +155,9 @@ export default function TravelPlannerPage() {
                     ? Math.max(1, Math.ceil((new Date(dates.end).getTime() - new Date(dates.start).getTime()) / 86400000))
                     : 7
             });
-        } catch (err) {
+        } catch (err: any) {
             console.error("City Intelligence Analysis failed", err);
+            setApiError(err.message || "An unexpected error occurred while communicating with the data server.");
         } finally {
             setLoading(false);
         }
@@ -207,24 +224,32 @@ export default function TravelPlannerPage() {
                         <div className="flex flex-col gap-4">
                             <label className="block text-[10px] text-slate-500 uppercase tracking-widest font-bold">Planned Window</label>
                             <div className="flex items-center gap-2">
-                                <div className="flex-1 flex items-center gap-3 px-5 py-4 rounded-2xl border bg-white/[0.02] border-white/5">
+                                <div className={`flex-1 flex items-center gap-3 px-5 py-4 rounded-2xl border bg-white/[0.02] ${isPastDateError ? 'border-red-500/50' : 'border-white/5'}`}>
                                     <Calendar className="w-4 h-4 text-slate-500" />
                                     <input
-                                        type="date" value={dates.start} onChange={(e) => setDates((d) => ({ ...d, start: e.target.value }))}
-                                        className="bg-transparent flex-1 text-sm font-bold text-white outline-none"
+                                        type="date" 
+                                        min={todayString}
+                                        value={dates.start} 
+                                        onChange={(e) => setDates((d) => ({ ...d, start: e.target.value }))}
+                                        className="bg-transparent flex-1 text-sm font-bold text-white outline-none caret-transparent select-none cursor-pointer"
                                         style={{ colorScheme: "dark" }}
                                     />
                                 </div>
                                 <ArrowRight className="w-4 h-4 text-slate-700" />
-                                <div className="flex-1 flex items-center gap-3 px-5 py-4 rounded-2xl border bg-white/[0.02] border-white/5">
+                                <div className={`flex-1 flex items-center gap-3 px-5 py-4 rounded-2xl border bg-white/[0.02] ${isEndDateError ? 'border-red-500/50' : 'border-white/5'}`}>
                                     <Calendar className="w-4 h-4 text-slate-500" />
                                     <input
-                                        type="date" value={dates.end} onChange={(e) => setDates((d) => ({ ...d, end: e.target.value }))}
-                                        className="bg-transparent flex-1 text-sm font-bold text-white outline-none"
+                                        type="date" 
+                                        min={dates.start || todayString}
+                                        value={dates.end} 
+                                        onChange={(e) => setDates((d) => ({ ...d, end: e.target.value }))}
+                                        className="bg-transparent flex-1 text-sm font-bold text-white outline-none caret-transparent select-none cursor-pointer"
                                         style={{ colorScheme: "dark" }}
                                     />
                                 </div>
                             </div>
+                            {isEndDateError && <p className="text-[10px] text-red-400 font-bold uppercase tracking-widest px-1">Error: End date cannot be before start date</p>}
+                            {isPastDateError && <p className="text-[10px] text-red-400 font-bold uppercase tracking-widest px-1">Error: Start date cannot be in the past</p>}
                         </div>
                         <div className="flex flex-col gap-4">
                             <label className="block text-[10px] text-slate-500 uppercase tracking-widest font-bold">Travel Persona</label>
@@ -245,15 +270,15 @@ export default function TravelPlannerPage() {
                         </div>
                     </div>
 
-                    <div className="p-8 pt-0">
+                    <div className="p-8 pt-0 space-y-4">
                         <button
                             onClick={handleAnalyze}
-                            disabled={loading || !from || !to}
+                            disabled={loading || !from || !to || hasDateError}
                             className="w-full py-6 rounded-[2rem] font-black text-sm uppercase tracking-[0.3em] transition-all duration-500 hover:scale-[1.01] active:scale-95 disabled:opacity-20 flex items-center justify-center gap-3"
                             style={{
                                 background: "linear-gradient(135deg, #00ff88, #0088ff)",
                                 color: "#0a0a0f",
-                                boxShadow: !loading && from && to ? "0 12px 48px rgba(0,255,136,0.3)" : "none",
+                                boxShadow: !loading && from && to && !hasDateError && !apiError ? "0 12px 48px rgba(0,255,136,0.3)" : "none",
                             }}
                         >
                             {loading ? (
@@ -263,6 +288,17 @@ export default function TravelPlannerPage() {
                                 </>
                             ) : "Execute Comparison Flow"}
                         </button>
+                        
+                        {/* Error UI Display */}
+                        {apiError && (
+                            <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2">
+                                <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+                                <div className="text-sm">
+                                    <p className="font-bold uppercase tracking-widest text-[10px] mb-0.5">Connection Error</p>
+                                    <p>{apiError}</p>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 

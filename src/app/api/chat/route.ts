@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { ENV } from '@/lib/env';
+
+const GEMINI_API_KEY = 'AIzaSyAIkBefQDZirSgZ8-AMFRBtg9HzPgoPREE';
 
 export async function POST(request: Request) {
     try {
@@ -9,39 +10,30 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Message is required' }, { status: 400 });
         }
 
-        if (!ENV.OPENAI_API_KEY) {
-            return NextResponse.json({
-                response: "I'm sorry, I'm currently in technical mode. My neural bridge isn't connected to the global intelligence network yet. Please provide a valid API key.",
-                suggestedQuestions: ["How do I add an API key?", "What models are supported?"]
-            });
-        }
+        const contents = history.map((msg: any) => ({
+            role: msg.role === 'assistant' ? 'model' : msg.role === 'model' ? 'model' : 'user',
+            parts: [{ text: msg.content }]
+        }));
 
-        // We will try DeepSeek direct first as per the key format, then fallback to OpenRouter logic if preferred.
-        // The user specifically asked for "DeepSeek API" and "freemodel".
-        // DeepSeek official API (api.deepseek.com) is very standard.
+        contents.push({
+            role: 'user',
+            parts: [{ text: message }]
+        });
 
-        const isOpenRouter = ENV.OPENAI_API_KEY.startsWith('sk-or-v1-');
-        const baseUrl = isOpenRouter ? 'https://openrouter.ai/api/v1' : 'https://api.deepseek.com';
-        // Using openrouter/auto allows OpenRouter to pick the best available model
-        const model = isOpenRouter ? 'openrouter/auto' : 'deepseek-chat';
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
-        console.log(`[chat] Calling ${model} at ${baseUrl}`);
+        console.log(`[chat] Calling Gemini API`);
 
-        const response = await fetch(`${baseUrl}/chat/completions`, {
+        const response = await fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${ENV.OPENAI_API_KEY}`,
-                'HTTP-Referer': 'https://safetrip360.com', // Required for some free models
-                'X-Title': 'SafeTrip360 AI',
             },
             body: JSON.stringify({
-                model: model,
-                messages: [
-                    ...history,
-                    { role: 'user', content: message }
-                ],
-                temperature: 0.7,
+                contents: contents,
+                generationConfig: {
+                    temperature: 0.7,
+                }
             })
         });
 
@@ -55,13 +47,13 @@ export async function POST(request: Request) {
 
         if (!response.ok) {
             const errorMsg = data.error?.message || rawText || "Internal Server Error";
-            console.error(`[chat] Provider error — HTTP ${response.status} using model "${model}":`, errorMsg);
+            console.error(`[chat] Provider error — HTTP ${response.status}:`, errorMsg);
             return NextResponse.json({
                 response: `⚠️ AI provider error (${response.status}): ${errorMsg}`
             });
         }
 
-        const aiMessage = data.choices?.[0]?.message?.content;
+        const aiMessage = data.candidates?.[0]?.content?.parts?.[0]?.text;
         if (!aiMessage) {
             console.error("[chat] Invalid response structure:", data);
             return NextResponse.json({
